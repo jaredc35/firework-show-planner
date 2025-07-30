@@ -2,6 +2,7 @@
 firework_env/
 venv/
 env/
+.vscode/
 
 # Python
 __pycache__/
@@ -40,4 +41,5 @@ Thumbs.db
 *.log
 
 # Environment variables
-.env
+.envserviceAccountKey.json
+serviceAccountKey.json

@@ -6,6 +6,20 @@ from datetime import datetime, timedelta
 import uuid
 import json
 
+# Import Firebase functions (comment out if not using Firebase)
+from firebase_config import (
+    save_show_to_firebase,
+    load_show_from_firebase,
+    get_user_shows,
+    # delete_show_from_firebase,
+)
+
+"""
+This streamlit app has the following features:
+1. A side tab with the following options: a. Firework Database, b. Any number of user-defined shows
+
+"""
+
 # Initialize session state
 if "fireworks" not in st.session_state:
     st.session_state.fireworks = []
@@ -570,7 +584,7 @@ def main():
             # Export/Import functionality
             st.header("Export/Import")
 
-            col_export, col_import = st.columns(2)
+            col_export, col_import, col_cloud = st.columns(3)
 
             with col_export:
                 if st.session_state.fireworks and st.button("Export Show Data"):
@@ -600,6 +614,47 @@ def main():
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error importing data: {e}")
+
+            with col_cloud:
+                st.subheader("Cloud Storage")
+
+                # Save to cloud
+                if st.session_state.fireworks:
+                    show_name = st.text_input(
+                        "Show Name", placeholder="My Firework Show"
+                    )
+                    if st.button("💾 Save to Cloud") and show_name:
+                        # Uncomment when Firebase is configured
+                        show_id = save_show_to_firebase(
+                            show_name, st.session_state.fireworks
+                        )
+                        if show_id:
+                            st.success(f"Saved to cloud! Show ID: {show_id}")
+                        # st.info("Firebase not configured yet")
+
+                # Load from cloud
+                st.markdown("**Load from Cloud:**")
+                # Uncomment when Firebase is configured
+                user_shows = get_user_shows()
+                if user_shows:
+                    show_options = [
+                        f"{show['name']} ({show['id'][:8]})" for show in user_shows
+                    ]
+                    selected_show = st.selectbox(
+                        "Your Shows", ["Select a show..."] + show_options
+                    )
+
+                    if selected_show != "Select a show...":
+                        show_id = selected_show.split("(")[-1].strip(")")
+                        if st.button("🔄 Load Show"):
+                            show_data = load_show_from_firebase(show_id)
+                            if show_data:
+                                st.session_state.fireworks = show_data["fireworks"]
+                                st.success(f"Loaded: {show_data['name']}")
+                                st.rerun()
+                else:
+                    st.info("No saved shows found")
+                # st.info("Configure Firebase to enable cloud storage")
 
         else:
             st.info("Add fireworks to see the timeline")
