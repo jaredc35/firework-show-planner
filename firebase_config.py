@@ -1,11 +1,33 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 import streamlit as st
+import json
+import os
 
 # Initialize Firebase (only once)
 if not firebase_admin._apps:
-    cred = credentials.Certificate("serviceAccountKey.json")
-    firebase_admin.initialize_app(cred)
+    try:
+        # Try to load from Streamlit secrets (for cloud deployment)
+        if hasattr(st, "secrets") and "firebase" in st.secrets:
+            # Load from Streamlit secrets
+            firebase_key = dict(st.secrets.firebase)
+            cred = credentials.Certificate(firebase_key)
+            firebase_admin.initialize_app(cred)
+            st.success("🔥 Connected to Firebase (Cloud)")
+
+        # Fallback to local file (for local development)
+        elif os.path.exists("serviceAccountKey.json"):
+            cred = credentials.Certificate("serviceAccountKey.json")
+            firebase_admin.initialize_app(cred)
+            st.success("🔥 Connected to Firebase (Local)")
+
+        else:
+            st.error("❌ Firebase credentials not found")
+            st.stop()
+
+    except Exception as e:
+        st.error(f"❌ Firebase connection failed: {e}")
+        st.stop()
 
 db = firestore.client()
 
